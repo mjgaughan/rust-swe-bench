@@ -156,7 +156,7 @@ def build_image(
 
 
 def build_base_images(
-    client: docker.DockerClient, dataset: list, force_rebuild: bool = False
+    client: docker.DockerClient, dataset: list, force_rebuild: bool = False, use_official_mirrors: bool = True
 ):
     """
     Builds the base images required for the dataset if they do not already exist.
@@ -165,9 +165,10 @@ def build_base_images(
         client (docker.DockerClient): Docker client to use for building the images
         dataset (list): List of test specs or dataset to build images for
         force_rebuild (bool): Whether to force rebuild the images even if they already exist
+        use_official_mirrors (bool): Whether to use official Rust mirrors or mirrors
     """
     # Get the base images to build from the dataset
-    test_specs = get_test_specs_from_dataset(dataset)
+    test_specs = get_test_specs_from_dataset(dataset, use_official_mirrors=use_official_mirrors)
     base_images = {
         x.base_image_key: (x.base_dockerfile, x.platform, x.repo) for x in test_specs
     }
@@ -274,6 +275,7 @@ def build_env_images(
     dataset: list,
     force_rebuild: bool = False,
     max_workers: int = 4,
+    use_official_mirrors: bool = True,
 ):
     """
     Builds the environment images required for the dataset if they do not already exist.
@@ -283,13 +285,14 @@ def build_env_images(
         dataset (list): List of test specs or dataset to build images for
         force_rebuild (bool): Whether to force rebuild the images even if they already exist
         max_workers (int): Maximum number of workers to use for building images
+        use_official_mirrors (bool): Whether to use official Rust mirrors or Chinese mirrors
     """
     # Get the environment images to build from the dataset
     if force_rebuild:
-        env_image_keys = {x.env_image_key for x in get_test_specs_from_dataset(dataset)}
+        env_image_keys = {x.env_image_key for x in get_test_specs_from_dataset(dataset, use_official_mirrors=use_official_mirrors)}
         for key in env_image_keys:
             remove_image(client, key, "quiet")
-    test_specs = build_base_images(client, dataset, force_rebuild)
+    test_specs = build_base_images(client, dataset, force_rebuild, use_official_mirrors=use_official_mirrors)
     configs_to_build = get_env_configs_to_build(client, dataset, test_specs)
     if len(configs_to_build) == 0:
         print("No environment images need to be built.")

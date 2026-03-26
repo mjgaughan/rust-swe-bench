@@ -234,6 +234,7 @@ def run_instances(
         timeout: int,
         config_path: str,
         build_image_only: bool = False,
+        use_official_mirrors: bool = True,
     ):
     """
     Run all instances for the given predictions in parallel.
@@ -255,19 +256,19 @@ def run_instances(
         for instance in instances:
             test_spec = None
             if instance[KEY_INSTANCE_ID] in configs["default"]:
-                test_spec = make_test_spec(instance)
+                test_spec = make_test_spec(instance, use_official_mirrors=use_official_mirrors)
                 test_spec.config = configs["default"]
                 print(f"Instance {instance[KEY_INSTANCE_ID]} is in default config")
             elif instance[KEY_INSTANCE_ID] in configs["nightly"]:
-                test_spec = make_nightly_test_spec(instance)
+                test_spec = make_nightly_test_spec(instance, use_official_mirrors=use_official_mirrors)
                 test_spec.config = configs["nightly"]
                 print(f"Instance {instance[KEY_INSTANCE_ID]} is in nightly config")
             elif instance[KEY_INSTANCE_ID] in configs["test"]:
-                test_spec = make_test_spec_wo_features(instance)
+                test_spec = make_test_spec_wo_features(instance, use_official_mirrors=use_official_mirrors)
                 test_spec.config = configs["test"]
                 print(f"Instance {instance[KEY_INSTANCE_ID]} is in test config")
             elif instance[KEY_INSTANCE_ID] in configs["nightly_wo_features"]:
-                test_spec = make_test_spec_nightly_wo_feature(instance)
+                test_spec = make_test_spec_nightly_wo_feature(instance, use_official_mirrors=use_official_mirrors)
                 test_spec.config = configs["nightly_wo_features"]
                 print(f"Instance {instance[KEY_INSTANCE_ID]} is in nightly_wo_features config")
             elif instance[KEY_INSTANCE_ID] in configs["all_failed"]:
@@ -522,6 +523,7 @@ def main(
         timeout: int,
         config_path: str,
         build_image_only: bool = False,
+        use_official_mirrors: bool = True,
     ):
     """
     Run evaluation harness for the given dataset and predictions.
@@ -557,8 +559,8 @@ def main(
         print("No instances to run.")
     else:
         # build environment images + run instances
-        build_env_images(client, dataset, force_rebuild, max_workers)
-        run_instances(predictions, dataset, cache_level, clean, force_rebuild, max_workers, run_id, timeout, config_path=config_path,build_image_only=build_image_only)
+        build_env_images(client, dataset, force_rebuild, max_workers, use_official_mirrors=use_official_mirrors)
+        run_instances(predictions, dataset, cache_level, clean, force_rebuild, max_workers, run_id, timeout, config_path=config_path, build_image_only=build_image_only, use_official_mirrors=use_official_mirrors)
 
 
     # clean images + make final report
@@ -599,6 +601,12 @@ if __name__ == "__main__":
         type=str2bool,
         required=True,
         help="If true, only build the images and do not run the instances",
+    )
+    parser.add_argument(
+        "--use_official_mirrors",
+        type=str2bool,
+        default=True,
+        help="If true, use official Rust crates.io; if false, use Chinese mirrors",
     )
     args = parser.parse_args()
 
