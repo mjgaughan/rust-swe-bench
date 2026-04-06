@@ -5,8 +5,8 @@ FROM --platform={platform} ubuntu:20.04
 ARG DEBIAN_FRONTEND=noninteractive
 ENV TZ=Etc/UTC
 
-ENV RUSTUP_DIST_SERVER="https://rsproxy.cn"
-ENV RUSTUP_UPDATE_ROOT="https://rsproxy.cn/rustup"
+ENV RUSTUP_DIST_SERVER="https://static.rust-lang.org"
+ENV RUSTUP_UPDATE_ROOT="https://static.rust-lang.org/rustup"
 
 RUN apt update && apt install -y \
 wget \
