@@ -5,8 +5,8 @@ FROM --platform={platform} ubuntu:20.04
 ARG DEBIAN_FRONTEND=noninteractive
 ENV TZ=Etc/UTC
 
-ENV RUSTUP_DIST_SERVER="https://rsproxy.cn"
-ENV RUSTUP_UPDATE_ROOT="https://rsproxy.cn/rustup"
+ENV RUSTUP_DIST_SERVER="https://static.rust-lang.org"
+ENV RUSTUP_UPDATE_ROOT="https://static.rust-lang.org/rustup"
 
 RUN apt update && apt install -y \
 wget \
@@ -48,13 +48,8 @@ _DOCKERFILE_ENV = r"""FROM --platform={platform} rustb.base.{arch}:latest
 RUN mkdir -p ~/.cargo && \
     cat <<EOF > ~/.cargo/config
 [source.crates-io]
-replace-with = 'rsproxy'
-[source.rsproxy]
-registry = "https://rsproxy.cn/crates.io-index"
-[source.rsproxy-sparse]
-registry = "sparse+https://rsproxy.cn/index/"
-[registries.rsproxy]
-index = "https://rsproxy.cn/crates.io-index"
+registry = "sparse+https://index.crates.io/"
+
 [net]
 git-fetch-with-cli = true
 EOF
@@ -82,28 +77,29 @@ FROM --platform={platform} asterinas/asterinas:{tag}
 # ENV RUSTUP_DIST_SERVER=https://mirrors.tuna.tsinghua.edu.cn/rustup
 # ENV RUSTUP_UPDATE_ROOT=https://mirrors.tuna.tsinghua.edu.cn/rustup/rustup
 
-ENV RUSTUP_DIST_SERVER=https://mirror.sjtu.edu.cn/rust-static
-ENV RUSTUP_UPDATE_ROOT=https://mirror.sjtu.edu.cn/rust-static/rustup
+ENV RUSTUP_DIST_SERVER="https://static.rust-lang.org"
+ENV RUSTUP_UPDATE_ROOT="https://static.rust-lang.org/rustup"
 
 RUN mkdir -p ~/.cargo && \
     cat <<EOF > ~/.cargo/config
 [source.crates-io]
-replace-with = "sjtu"
+registry = "sparse+https://index.crates.io/"
+#replace-with = "sjtu"
 
-[source.tuna]
-registry = "https://mirrors.tuna.tsinghua.edu.cn/crates.io-index"
-
-
-[source.ustc]
-registry = "git://mirrors.ustc.edu.cn/crates.io-index"
+#[source.tuna]
+#registry = "https://mirrors.tuna.tsinghua.edu.cn/crates.io-index"
 
 
-[source.sjtu]
-registry = "https://mirrors.sjtug.sjtu.edu.cn/git/crates.io-index"
+#[source.ustc]
+#registry = "git://mirrors.ustc.edu.cn/crates.io-index"
+
+
+#[source.sjtu]
+#registry = "https://mirrors.sjtug.sjtu.edu.cn/git/crates.io-index"
 
 # rustcc社区
-[source.rustcc]
-registry = "git://crates.rustcc.cn/crates.io-index"
+#[source.rustcc]
+#registry = "git://crates.rustcc.cn/crates.io-index"
 EOF
 
 COPY ./setup_env.sh /root/
