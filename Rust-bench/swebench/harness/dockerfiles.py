@@ -43,6 +43,50 @@ RUN apt-get install protobuf-compiler -y
 
 """
 
+_DOCKERFILE_BASE_MIRRORS = r"""
+FROM --platform={platform} ubuntu:20.04
+
+ARG DEBIAN_FRONTEND=noninteractive
+ENV TZ=Etc/UTC
+
+ENV RUSTUP_DIST_SERVER="https://rsproxy.cn"
+ENV RUSTUP_UPDATE_ROOT="https://rsproxy.cn/rustup"
+
+RUN apt update && apt install -y \
+wget \
+git \
+build-essential \
+libffi-dev \
+libtiff-dev \
+jq \
+curl \
+locales \
+locales-all \
+tzdata \
+&& rm -rf /var/lib/apt/lists/*
+
+RUN apt-get update && \
+    apt-get install -y libssl-dev
+
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+ENV PATH=/root/.cargo/bin:$PATH
+RUN git clone https://github.com/riverLaugh/LTS.git
+RUN cd LTS && git checkout main && cargo install --path . 
+
+RUN git clone --bare https://github.com/rust-lang/crates.io-index-archive.git
+ENV CARGO_REGISTRY_GIT_DIR=/crates.io-index-archive.git
+
+RUN adduser --disabled-password --gecos 'dog' nonroot
+
+
+RUN apt-get update
+RUN apt-get install pkg-config -y
+RUN apt-get install python3-pip -y
+RUN apt-get install cmake -y
+RUN apt-get install protobuf-compiler -y
+
+"""
+
 _DOCKERFILE_ENV = r"""FROM --platform={platform} rustb.base.{arch}:latest
 
 RUN mkdir -p ~/.cargo && \
@@ -133,8 +177,8 @@ RUN /bin/bash -c "source ~/.bashrc && /root/setup_env.sh"
 _DOCKERFILE_ENV_asterinas_MIRRORS = r"""
 FROM --platform={platform} asterinas/asterinas:{tag}
 
-ENV RUSTUP_DIST_SERVER="https://static.rust-lang.org"
-ENV RUSTUP_UPDATE_ROOT="https://static.rust-lang.org/rustup"
+ENV RUSTUP_DIST_SERVER="https://rsproxy.cn"
+ENV RUSTUP_UPDATE_ROOT="https://rsproxy.cn/rustup"
 
 RUN mkdir -p ~/.cargo && \
     cat <<EOF > ~/.cargo/config
@@ -164,12 +208,13 @@ RUN /bin/bash -c "source ~/.bashrc && /root/setup_env.sh"
 
 
 
-def get_dockerfile_base(platform, arch):
+def get_dockerfile_base(platform, arch, use_official_mirrors=True):
     if arch == "arm64":
         conda_arch = "aarch64"
     else:
         conda_arch = arch
-    return _DOCKERFILE_BASE.format(platform=platform, conda_arch=conda_arch)
+    template = _DOCKERFILE_BASE if use_official_mirrors else _DOCKERFILE_BASE_MIRRORS
+    return template.format(platform=platform, conda_arch=conda_arch)
 
 
 def get_dockerfile_env(platform, arch, use_official_mirrors=True):
