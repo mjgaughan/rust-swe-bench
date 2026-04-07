@@ -1,12 +1,12 @@
 # Quick Start
 
-## Benchmark Evaluation Set-Up
+## Benchmark Setup
 
 This section guides you through setting up the necessary environment and running the evaluation harness on the `Rust-bench` dataset.
 
-The off-the-shelf `swebench` PyPi package does not include certain Rust dependencies necessary for certain projects withn the rust-swe-bench benchmark. As such, to run the `swebench` evaluation harness with rust-swe-bench **you must use the local, custom `swebench` evaluation harness as specified in this documentation.**
+## Installation
 
-### 1. Clone the repository and install the required dependencies:
+First, clone the repository and install the required dependencies:
 
 ```
 # Navigate into the project directory
@@ -16,9 +16,7 @@ cd Rust-bench
 pip install -e .
 ```
 
-### 2. Set the environment variable `GITHUB_TOKENS` to a GitHub Access Token. 
-
-### 3. To build the instance images, use the commands below:
+Second, to build the instance images, use the commands below:
 
 ```
 cd Rust-bench/swebench/harness
@@ -29,31 +27,30 @@ python run_evaluation.py \
     --max_workers 10\
     --cache_level instance \
     --predictions_path gold \
-    --split train \
+    --split train\
     --config_path swebench/harness/logs/config.json \
     --build_image_only 1
 ```
 
-> [!TIP]
-> Running evaluations can be resource-intensive. For optimal performance, we recommend the following system specifications:
->
-> - **Architecture:** x86_64
-> - **Storage:** At least 120GB of free space
-> - **RAM:** 16GB or more
-> - **CPU:** 8 cores or more
->
-> You may need to experiment with the `--max_workers` argument to find the optimal number of workers for your machine, but we recommend using fewer than `min(0.75 * os.cpu_count(), 24)`.
+## Evaluation
 
-### 4. Run the local, custom evaluation harness
+Running evaluations can be resource-intensive. For optimal performance, we recommend the following system specifications:
+
+- **Architecture:** x86_64
+- **Storage:** At least 120GB of free space
+- **RAM:** 16GB or more
+- **CPU:** 8 cores or more
+
+Running fast evaluations on Rust-bench can be resource intensive. We recommend running the evaluation harness on an `x86_64`machine with at least 120GB of free storage, 16GB of RAM, and 8 CPU cores. You may need to experiment with the `--max_workers` argument to find the optimal number of workers for your machine, but we recommend using fewer than `min(0.75 * os.cpu_count(), 24)`.
 
 ```
+# Run the evaluation harness
 python -m swebench.harness.run_evaluation \
     --dataset_name user2f86/rustbench \
     --predictions_path <path_to_your_predictions> \
     --max_workers <num_workers> \
     --run_id <your_run_id> \
-    --split train\
-    --config_path Rust-bench/swebench/harness/logs/config.json \
+    --config_path swebench/harness/logs/config.json \
     --build_image_only 0
 ```
 
