@@ -211,6 +211,7 @@ class TestSpec:
     PASS_TO_PASS: list[str]
     tests_changed: list[str]
     image_tag: str
+    use_official_mirrors: bool = False
 
     @property
     def setup_env_script(self):
@@ -272,8 +273,8 @@ class TestSpec:
     @property
     def env_dockerfile(self):
         if self.repo == "asterinas/asterinas":
-            return get_dockerfile_env_asterinas(self.platform, tag=self.image_tag)
-        return get_dockerfile_env(self.platform, self.arch)
+            return get_dockerfile_env_asterinas(self.platform, tag=self.image_tag, use_official_mirrors=self.use_official_mirrors)
+        return get_dockerfile_env(self.platform, self.arch, use_official_mirrors=self.use_official_mirrors)
 
     @property
     def instance_dockerfile(self):
@@ -289,7 +290,7 @@ class TestSpec:
             raise ValueError(f"Invalid architecture: {self.arch}")
 
 
-def get_test_specs_from_dataset(dataset: Union[list[SWEbenchInstance], list[TestSpec]]) -> list[TestSpec]:
+def get_test_specs_from_dataset(dataset: Union[list[SWEbenchInstance], list[TestSpec]], use_official_mirrors: bool = True) -> list[TestSpec]:
     """
     Idempotent function that converts a list of SWEbenchInstance objects to a list of TestSpec objects.
     """
@@ -297,7 +298,7 @@ def get_test_specs_from_dataset(dataset: Union[list[SWEbenchInstance], list[Test
         return cast(list[TestSpec], dataset)
     typed_dataset = cast(list[SWEbenchInstance], dataset)
     progress_bar = tqdm(typed_dataset, desc="Converting instances to test specs")
-    mapped_results = map(make_docker_test_spec, progress_bar)
+    mapped_results = map(lambda x: make_docker_test_spec(x, use_official_mirrors=use_official_mirrors), progress_bar)
     filtered_result = [item for item in mapped_results if item is not None]
     return filtered_result
 
@@ -596,10 +597,8 @@ def _create_test_spec_base(
     repo_script_generator: callable ,
     eval_script_generator: callable,
     pre_run_script_generator: callable,
-    is_nightly_setup: bool = False, 
-    
-    # MAP_REPO_VERSION_TO_SPECS, default_config, get_test_directives,
-    # make_env_script_list 等都是可访问的
+    is_nightly_setup: bool = False,
+    use_official_mirrors: bool = True,
 ) -> Union[TestSpec, None]:
     if isinstance(instance, TestSpec): 
         return instance
@@ -673,52 +672,58 @@ def _create_test_spec_base(
         FAIL_TO_PASS=fail_to_pass,
         PASS_TO_PASS=pass_to_pass,
         image_tag=image_tag,
+        use_official_mirrors=use_official_mirrors,
     )
 
 # --- 3. 定义四个具体的工厂函数 ---
 
-def make_docker_test_spec(instance: SWEbenchInstance) -> Union[TestSpec, None]: 
+def make_docker_test_spec(instance: SWEbenchInstance, use_official_mirrors: bool = True) -> Union[TestSpec, None]: 
     return _create_test_spec_base(
         instance,
         repo_script_generator=None, 
         eval_script_generator=None, 
         pre_run_script_generator=None,
-        is_nightly_setup=False
+        is_nightly_setup=False,
+        use_official_mirrors=use_official_mirrors,
     )
 
 
-def make_test_spec(instance: SWEbenchInstance) -> Union[TestSpec, None]: 
+def make_test_spec(instance: SWEbenchInstance, use_official_mirrors: bool = True) -> Union[TestSpec, None]: 
     return _create_test_spec_base(
         instance,
         repo_script_generator=make_repo_script_list, 
         eval_script_generator=make_eval_script_list, 
         pre_run_script_generator=make_pre_run_list,
-        is_nightly_setup=False 
+        is_nightly_setup=False,
+        use_official_mirrors=use_official_mirrors,
     )
 
-def make_nightly_test_spec(instance: SWEbenchInstance) -> Union[TestSpec, None]: 
+def make_nightly_test_spec(instance: SWEbenchInstance, use_official_mirrors: bool = True) -> Union[TestSpec, None]: 
     return _create_test_spec_base(
         instance,
         repo_script_generator=make_nightly_repo_script_list, 
         eval_script_generator=make_eval_script_list, 
         pre_run_script_generator=make_pre_run_list,
-        is_nightly_setup=True
+        is_nightly_setup=True,
+        use_official_mirrors=use_official_mirrors,
     )
 
-def make_test_spec_wo_features(instance: SWEbenchInstance) -> Union[TestSpec, None]: 
+def make_test_spec_wo_features(instance: SWEbenchInstance, use_official_mirrors: bool = True) -> Union[TestSpec, None]: 
     return _create_test_spec_base(
         instance,
         repo_script_generator=make_repo_script_list, 
         eval_script_generator=make_eval_script_list_wo_features, 
         pre_run_script_generator=make_pre_run_list,
-        is_nightly_setup=False
+        is_nightly_setup=False,
+        use_official_mirrors=use_official_mirrors,
     )
 
-def make_test_spec_nightly_wo_feature(instance: SWEbenchInstance) -> Union[TestSpec, None]: 
+def make_test_spec_nightly_wo_feature(instance: SWEbenchInstance, use_official_mirrors: bool = True) -> Union[TestSpec, None]: 
     return _create_test_spec_base(
         instance,
         repo_script_generator=make_nightly_repo_script_list, 
         eval_script_generator=make_eval_script_list_wo_features, 
         pre_run_script_generator=make_pre_run_list,
-        is_nightly_setup=True
+        is_nightly_setup=True,
+        use_official_mirrors=use_official_mirrors,
     )

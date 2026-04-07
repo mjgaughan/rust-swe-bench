@@ -63,6 +63,29 @@ WORKDIR /testbed/
 # RUN echo "source /opt/miniconda3/etc/profile.d/conda.sh && conda activate testbed" > /root/.bashrc
 """
 
+_DOCKERFILE_ENV_MIRRORS = r"""FROM --platform={platform} rustb.base.{arch}:latest
+
+RUN mkdir -p ~/.cargo && \
+    cat <<EOF > ~/.cargo/config
+[source.crates-io]
+replace-with = 'rsproxy'
+[source.rsproxy]
+registry = "https://rsproxy.cn/crates.io-index"
+[registries.rsproxy]
+index = "https://rsproxy.cn/crates.io-index"
+[net]
+git-fetch-with-cli = true
+EOF
+
+COPY ./setup_env.sh /root/
+RUN chmod +x /root/setup_env.sh
+RUN /bin/bash -c "source ~/.bashrc && /root/setup_env.sh"
+WORKDIR /testbed/
+
+# Automatically activate the testbed environment
+# RUN echo "source /opt/miniconda3/etc/profile.d/conda.sh && conda activate testbed" > /root/.bashrc
+"""
+
 _DOCKERFILE_INSTANCE = r"""FROM --platform={platform} {env_image_name}
 RUN cd ../LTS && git pull && git checkout main && cargo install --path . 
 RUN cd ../testbed/
@@ -107,6 +130,38 @@ RUN chmod +x /root/setup_env.sh
 RUN /bin/bash -c "source ~/.bashrc && /root/setup_env.sh"
 """
 
+_DOCKERFILE_ENV_asterinas_MIRRORS = r"""
+FROM --platform={platform} asterinas/asterinas:{tag}
+
+ENV RUSTUP_DIST_SERVER="https://static.rust-lang.org"
+ENV RUSTUP_UPDATE_ROOT="https://static.rust-lang.org/rustup"
+
+RUN mkdir -p ~/.cargo && \
+    cat <<EOF > ~/.cargo/config
+[source.crates-io]
+replace-with = "sjtu"
+
+[source.tuna]
+registry = "https://mirrors.tuna.tsinghua.edu.cn/crates.io-index"
+
+
+[source.ustc]
+registry = "git://mirrors.ustc.edu.cn/crates.io-index"
+
+
+[source.sjtu]
+registry = "https://mirrors.sjtug.sjtu.edu.cn/git/crates.io-index"
+
+# rustcc社区
+[source.rustcc]
+registry = "git://crates.rustcc.cn/crates.io-index"
+EOF
+
+COPY ./setup_env.sh /root/
+RUN chmod +x /root/setup_env.sh
+RUN /bin/bash -c "source ~/.bashrc && /root/setup_env.sh"
+"""
+
 
 
 def get_dockerfile_base(platform, arch):
@@ -117,13 +172,15 @@ def get_dockerfile_base(platform, arch):
     return _DOCKERFILE_BASE.format(platform=platform, conda_arch=conda_arch)
 
 
-def get_dockerfile_env(platform, arch):
-    return _DOCKERFILE_ENV.format(platform=platform, arch=arch)
+def get_dockerfile_env(platform, arch, use_official_mirrors=True):
+    template = _DOCKERFILE_ENV if use_official_mirrors else _DOCKERFILE_ENV_MIRRORS
+    return template.format(platform=platform, arch=arch)
 
 
 def get_dockerfile_instance(platform, env_image_name):
     return _DOCKERFILE_INSTANCE.format(platform=platform, env_image_name=env_image_name)
 
 
-def get_dockerfile_env_asterinas(platform, tag):
-    return _DOCKERFILE_ENV_asterinas.format(platform=platform, tag=tag)
+def get_dockerfile_env_asterinas(platform, tag, use_official_mirrors=True):
+    template = _DOCKERFILE_ENV_asterinas if use_official_mirrors else _DOCKERFILE_ENV_asterinas_MIRRORS
+    return template.format(platform=platform, tag=tag)
